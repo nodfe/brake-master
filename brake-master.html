@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0d">
+<title>REDLINE · 极限制动</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Oswald:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --amber:#ff7a3c;
+    --amber-2:#ffa870;
+    --amber-dim:#c05a28;
+    --green:#5ee08a;
+    --ink:#eef3f8;
+    --dim:#8e99a6;
+    --dim2:#5c6673;
+    --line:rgba(255,255,255,.09);
+    --line2:rgba(255,255,255,.055);
+    --panel:rgba(9,12,16,.58);
+    --panel2:rgba(11,14,18,.82);
+    --num:"Oswald","Chakra Petch",-apple-system,"PingFang SC",sans-serif;
+    --disp:"Chakra Petch",-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;background:#07080a}
+  body{font-family:var(--disp);color:var(--ink);overflow:hidden;
+    overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+  #app{position:fixed;inset:0;overflow:hidden;touch-action:none}
+  #scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* ---------- 顶部条 ---------- */
+  #topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:flex-start;padding:calc(env(safe-area-inset-top) + 16px) 20px 0;
+    pointer-events:none}
+  .brand{display:flex;gap:10px;align-items:center}
+  .logo{font-family:var(--num);font-weight:700;font-size:26px;line-height:.9;color:#ff2e2e;
+    letter-spacing:-.14em;text-shadow:0 0 18px rgba(255,46,46,.6);transform:skewX(-8deg)}
+  .bname{font-family:var(--num);font-weight:700;font-size:27px;letter-spacing:.10em;line-height:1;
+    color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.9)}
+  .bsub{font-size:11px;letter-spacing:.62em;color:var(--amber);margin-top:3px;
+    text-shadow:0 0 14px rgba(255,122,60,.5)}
+  .tbtns{display:flex;gap:10px;pointer-events:auto}
+  .tbtn{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.14);
+    background:rgba(10,12,16,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    color:#cfd8e2;font-size:15px;cursor:pointer;display:grid;place-items:center;transition:.15s}
+  .tbtn:hover{background:rgba(30,36,44,.8)}
+  .tbtn:active{transform:scale(.93)}
+  .tbtn.off{color:#4b545f}
+
+  /* ---------- 实时遥测（玻璃上的小卡） ---------- */
+  #tele{position:absolute;left:calc(env(safe-area-inset-left) + 34px);top:14.5%;
+    width:262px;padding:11px 13px 8px;border-radius:12px;
+    background:linear-gradient(180deg,rgba(10,13,17,.62),rgba(8,10,14,.44));
+    border:1px solid rgba(255,255,255,.07);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    box-shadow:0 12px 34px rgba(0,0,0,.5);
+    font-size:10px;color:var(--dim);pointer-events:none}
+  .tele-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .tele-head .t{font-size:11px;color:#c9d2dc;letter-spacing:.06em}
+  .tele-legend{display:flex;gap:12px;font-size:10px}
+  .lg{display:flex;gap:5px;align-items:center}
+  .lg i{width:12px;height:2px;border-radius:2px;display:block}
+  .lg.v i{background:var(--green)} .lg.f i{background:var(--amber)}
+  #teleCvs{width:100%;height:112px;display:block}
+
+  /* ---------- 信号灯 ---------- */
+  #signal{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 14px);transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;text-align:center}
+  .lights{display:flex;gap:6px;padding:9px;border-radius:20px;
+    background:linear-gradient(180deg,rgba(16,19,24,.92),rgba(6,8,11,.95));
+    border:1px solid rgba(255,255,255,.09);box-shadow:0 14px 40px rgba(0,0,0,.65)}
+  .lamp{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--disp);font-weight:700;font-size:12.5px;letter-spacing:.03em;
+    background:#161a20;color:#3c444e;border:1px solid rgba(255,255,255,.06);
+    transition:background .12s,color .12s,box-shadow .12s}
+  .lamp.stop.on{background:radial-gradient(circle at 38% 32%,#ff6a5a,#d81f10 62%,#7d0c05);
+    color:#fff;box-shadow:0 0 26px rgba(255,50,30,.75),inset 0 0 14px rgba(255,150,120,.5)}
+  .lamp.go.on{background:radial-gradient(circle at 38% 32%,#8bf7ac,#22c060 62%,#0a5a2c);
+    color:#04220f;box-shadow:0 0 26px rgba(60,230,120,.7),inset 0 0 14px rgba(200,255,215,.45)}
+  .sig-title{font-size:23px;font-weight:700;letter-spacing:.09em;color:var(--amber);
+    text-shadow:0 0 26px rgba(255,122,60,.55),0 2px 10px rgba(0,0,0,.9);line-height:1.05}
+  .sig-title.go{color:var(--green);text-shadow:0 0 26px rgba(94,224,138,.6),0 2px 10px rgba(0,0,0,.9)}
+  .sig-pill{padding:6px 16px;border-radius:999px;font-size:13px;letter-spacing:.08em;
+    background:rgba(10,13,17,.72);border:1px solid rgba(255,255,255,.12);color:#dfe6ee}
+  .sig-sub{font-size:16px;color:#cfd7e0;letter-spacing:.05em;text-shadow:0 2px 10px rgba(0,0,0,.85)}
+  .sig-sub b{color:var(--amber)}
+
+  /* ---------- 仪表台 ---------- */
+  #dash{position:absolute;left:0;right:0;bottom:0;height:50.5%;
+    display:flex;align-items:stretch;gap:0;
+    padding:0 calc(env(safe-area-inset-left) + 22px) calc(env(safe-area-inset-bottom) + 14px)
+             calc(env(safe-area-inset-right) + 22px);
+    background:linear-gradient(180deg,rgba(6,8,11,.10) 0%,rgba(6,8,11,.62) 16%,rgba(5,7,10,.88) 42%,rgba(4,6,9,.95) 100%);
+    pointer-events:none}
+  .phead{display:flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:.16em;
+    color:#aab4c0;margin-bottom:12px;text-transform:uppercase}
+  .phead .bar{width:4px;height:14px;border-radius:2px;background:var(--amber);
+    box-shadow:0 0 12px rgba(255,122,60,.7)}
+
+  .dash-left{width:236px;display:flex;flex-direction:column;justify-content:center;padding-bottom:8px}
+  .trow{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+    padding:8px 0;border-bottom:1px solid var(--line2)}
+  .trow:last-child{border-bottom:0}
+  .trow span{font-size:12px;color:var(--dim);letter-spacing:.03em}
+  .trow b{font-family:var(--num);font-weight:600;font-size:19px;color:#fff;letter-spacing:.02em}
+  .trow b small{font-size:11px;color:var(--dim);margin-left:2px;font-family:var(--disp)}
+  .trow.best b{color:var(--amber-2);font-size:16px}
+
+  .dash-mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:relative}
+  .speedo{position:relative;width:min(360px,32vw);max-width:360px}
+  .speedo svg{width:100%;height:auto;display:block;overflow:visible}
+  .sp-num{position:absolute;left:0;right:0;top:52%;transform:translateY(-50%);text-align:center}
+  .sp-num span{font-family:var(--num);font-weight:600;font-size:clamp(52px,7.6vw,92px);line-height:.9;
+    letter-spacing:.02em;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.75)}
+  .sp-num span.warn{color:#ff5a4a;animation:gaugeWarn .46s infinite;
+    text-shadow:0 4px 30px rgba(0,0,0,.75),0 0 36px rgba(255,70,60,.8)}
+  @keyframes gaugeWarn{0%,100%{opacity:1}50%{opacity:.5}}
+  .sp-num em{display:block;font-style:normal;font-size:11px;letter-spacing:.36em;color:var(--dim);
+    margin-top:6px}
+  .sp-state{font-size:13.5px;font-weight:700;letter-spacing:.30em;color:var(--amber);margin-top:2px;
+    text-shadow:0 0 20px rgba(255,122,60,.45)}
+  .sp-state.go{color:var(--green);text-shadow:0 0 20px rgba(94,224,138,.5)}
+  .sp-state.bad{color:#ff4d4d;text-shadow:0 0 20px rgba(255,70,70,.5)}
+  .sp-state.abs{color:#ff8b4d;text-shadow:0 0 20px rgba(255,140,77,.55);animation:cutFlash .4s infinite}
+  .sp-hint{margin-top:12px;font-size:14px;color:#c3ccd6;display:flex;gap:22px;align-items:center}
+  .sp-hint .go{color:var(--green);font-weight:700}
+  .sp-tip{margin-top:10px;font-size:12px;color:var(--dim2);letter-spacing:.05em}
+
+  /* ---------- 刹车力度面板 ---------- */
+  .dash-right{width:330px;display:flex;flex-direction:column;justify-content:center;
+    pointer-events:none;padding-bottom:6px}
+  .fval{display:flex;align-items:baseline;gap:7px;font-family:var(--num);font-weight:600;
+    font-size:38px;line-height:1;color:#fff}
+  .fval span{font-size:15px;color:var(--dim);font-family:var(--disp);font-weight:500}
+  .fval.hot b{color:#ff4d4d;text-shadow:0 0 24px rgba(255,60,60,.6)}
+  .fval.jit b{animation:forceJit .075s steps(2) infinite}
+  @keyframes forceJit{0%{transform:translate(0,0)}25%{transform:translate(-1.5px,1px)}
+    50%{transform:translate(1px,-1.5px)}75%{transform:translate(-1px,-1px)}100%{transform:translate(1.5px,1px)}}
+  .fdesc{font-size:12px;color:var(--dim);margin-top:6px}
+  .fdesc.abs{color:var(--amber);text-shadow:0 0 14px rgba(255,122,60,.4)}
+  .fdesc.fuse{color:#ff5a4a;font-weight:700;animation:cutFlash .3s infinite}
+  .fzone{display:flex;gap:14px;margin-top:14px;align-items:stretch}
+  .fbar{position:relative;width:96px;height:176px;border-radius:8px;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    border:1px solid var(--line);display:flex;align-items:flex-end;overflow:hidden}
+  .fbar .seg{position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:linear-gradient(180deg,#ffb47c,var(--amber) 55%,var(--amber-dim));
+    box-shadow:0 -6px 22px rgba(255,122,60,.35)}
+  .fbar .seg.over{background:linear-gradient(180deg,#ff8a7a,#d81f12);
+    box-shadow:0 -6px 26px rgba(255,60,45,.55)}
+  .fbar-break{position:absolute;left:0;right:0;top:0;height:3px;
+    background:repeating-linear-gradient(90deg,#ff3b3b 0 6px,transparent 6px 12px);
+    box-shadow:0 0 12px rgba(255,60,60,.9)}
+  /* 抓地极限：1500 N（ABS 介入线） */
+  .fbar-grip{position:absolute;left:0;right:0;top:6.25%;height:2px;
+    background:repeating-linear-gradient(90deg,rgba(255,180,110,.95) 0 4px,transparent 4px 8px)}
+  /* 削峰区：1500~1600 N 之间这段压力是无效的 */
+  .fbar-cut{position:absolute;left:0;right:0;top:0;height:6.25%;opacity:0;
+    background:repeating-linear-gradient(45deg,rgba(255,60,45,.42) 0 4px,transparent 4px 8px)}
+  .fbar.abs .fbar-cut{opacity:1;animation:cutFlash .24s infinite}
+  @keyframes cutFlash{0%,100%{opacity:.45}50%{opacity:1}}
+  /* 满槽溢出：力度已经顶穿显示量程，条子封顶但数值继续往上跑 */
+  .fbar.sat .seg{background:linear-gradient(180deg,#ffa08e,#ff2f22);
+    box-shadow:0 -6px 30px rgba(255,50,40,.75)}
+  .fbar.sat .fbar-break{box-shadow:0 0 18px rgba(255,60,60,1)}
+  .fbar .tick.tovf{top:4px;left:auto;right:5px;color:#ff5a4a;font-weight:700;
+    font-family:var(--num);opacity:0;transition:opacity .1s}
+  .fbar.sat .tick.tovf{opacity:1;animation:cutFlash .22s infinite}
+  .fbar .tick{position:absolute;left:6px;font-family:var(--num);font-size:10.5px;color:var(--dim);
+    letter-spacing:.02em;text-shadow:0 1px 5px rgba(0,0,0,.85)}
+  .fbar .tick em{font-style:normal;color:#ff4d4d;font-weight:700;font-family:var(--disp)}
+  .tick.t1600{top:5px;color:#ff8080}.tick.t1200{top:26%}.tick.t800{top:52%}.tick.t0{bottom:4px}
+  .absLed{font-style:normal;font-family:var(--num);font-size:10.5px;font-weight:600;
+    letter-spacing:.14em;margin-left:auto;padding:2px 7px;border-radius:5px;
+    color:#5c6673;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+    opacity:.5;transition:none}
+  .absLed.on{opacity:1;color:#fff;background:#d81f12;border-color:#ff6a5a;
+    box-shadow:0 0 16px rgba(255,60,45,.9);animation:cutFlash .16s infinite}
+  .pedalbox{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;position:relative}
+  .pedalbox svg{width:100%;max-width:118px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+  .pedalbox .plabel{position:absolute;bottom:-2px;font-size:10.5px;color:var(--dim2);letter-spacing:.1em}
+  .brake-btn{margin-top:14px;width:100%;max-width:300px;padding:14px 16px;border-radius:14px;border:0;
+    cursor:pointer;pointer-events:auto;font-family:var(--disp);text-align:center;
+    background:linear-gradient(180deg,#ffb887,var(--amber) 45%,#e8622a);
+    box-shadow:0 12px 30px rgba(232,98,42,.35);transition:transform .07s,filter .12s}
+  .brake-btn b{display:block;font-size:19px;font-weight:700;letter-spacing:.13em;color:#2a0f04}
+  .brake-btn span{display:block;font-size:11.5px;color:rgba(42,15,4,.72);margin-top:3px;letter-spacing:.06em}
+  .brake-btn.active{transform:scale(.97);filter:brightness(1.15)}
+  .fnote{margin-top:10px;font-size:11px;color:var(--dim2);letter-spacing:.06em;text-align:center}
+  .fnote2{font-size:10.5px;color:#4a525c;letter-spacing:.06em;text-align:center;margin-top:4px}
+
+  /* ---------- 结果页 ---------- */
+  #result{position:absolute;inset:0;z-index:30;display:grid;place-items:center;
+    padding:20px;background:rgba(4,6,9,.62);
+    backdrop-filter:blur(16px) saturate(.7);-webkit-backdrop-filter:blur(16px) saturate(.7)}
+  #result.hidden{display:none}
+  .rcard{width:min(760px,94vw);max-height:94vh;overflow:auto;border-radius:22px;
+    background:linear-gradient(180deg,#15181d,#0e1114);border:1px solid rgba(255,255,255,.07);
+    box-shadow:0 40px 100px rgba(0,0,0,.8);padding:26px 30px 24px;text-align:center;
+    animation:pop .32s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes pop{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  .rstat{font-size:16px;font-weight:700;letter-spacing:.42em;color:var(--green)}
+  .rstat.fail{color:#ff6b5a}
+  .rtitle{font-size:clamp(30px,5.4vw,46px);font-weight:700;letter-spacing:.06em;margin-top:8px}
+  .rsub{font-size:15px;color:#aeb8c4;margin-top:12px;line-height:1.6}
+  .rbig{font-family:var(--num);font-weight:600;font-size:clamp(42px,7.2vw,66px);line-height:1;
+    color:var(--amber);margin-top:14px;letter-spacing:.01em}
+  .rbig.good{color:var(--green)}
+  .rbig-t{font-size:13px;color:var(--dim);margin-top:8px;letter-spacing:.06em}
+  .rrow{display:flex;margin-top:18px;border-top:1px solid var(--line2);
+    border-bottom:1px solid var(--line2);padding:13px 0}
+  .rcol{flex:1;border-right:1px solid var(--line2)}
+  .rcol:last-child{border-right:0}
+  .rcol .k{font-size:12.5px;color:var(--dim);letter-spacing:.06em}
+  .rcol .v{font-family:var(--num);font-weight:600;font-size:24px;margin-top:7px;color:#fff}
+  .rgoal{font-size:14px;color:#c8d1db;margin-top:16px;letter-spacing:.03em}
+  .rgoal b{color:var(--amber)}
+  .rchart{margin-top:13px;border:1px solid var(--line);border-radius:14px;
+    background:rgba(9,12,16,.65);padding:12px 16px 8px;text-align:left}
+  .rchart .ch{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+    color:#c2cbd5;margin-bottom:6px}
+  .rchart .lg{font-size:12px;color:var(--dim)}
+  #resCvs{width:100%;height:170px;display:block}
+  .rfoot{font-family:var(--num);font-size:13px;color:var(--dim);margin-top:8px;letter-spacing:.04em}
+  .rbtns{display:flex;gap:14px;margin-top:18px}
+  .rbtn{flex:1;padding:14px;border-radius:13px;border:0;cursor:pointer;font-family:var(--disp);
+    font-size:18px;font-weight:700;letter-spacing:.12em;
+    background:linear-gradient(180deg,#ffb887,var(--amber) 45%,#e8622a);color:#2a0f04;
+    box-shadow:0 12px 28px rgba(232,98,42,.32);transition:.14s}
+  .rbtn.ghost{background:transparent;border:1px solid rgba(255,255,255,.16);color:#dfe6ee;box-shadow:none}
+  .rbtn:hover{filter:brightness(1.08)} .rbtn:active{transform:translateY(2px)}
+
+  /* ---------- 首页 ---------- */
+  #home{position:absolute;inset:0;z-index:25;display:grid;place-items:center;
+    background:radial-gradient(120% 80% at 50% 42%,rgba(6,8,12,.30),rgba(3,4,7,.86));
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  #home.hidden{display:none}
+  .hwrap{text-align:center;padding:20px}
+  .hlogo{font-family:var(--num);font-weight:700;font-size:clamp(48px,9vw,92px);letter-spacing:.10em;
+    line-height:1;color:#fff;text-shadow:0 6px 40px rgba(0,0,0,.9)}
+  .hlogo i{font-style:normal;color:#ff2e2e;text-shadow:0 0 26px rgba(255,46,46,.6)}
+  .hsub{margin-top:12px;font-size:clamp(13px,2.2vw,17px);letter-spacing:.5em;color:var(--amber)}
+  .htip{margin-top:26px;font-size:13.5px;color:#b9c3ce;line-height:2;letter-spacing:.05em}
+  .htip b{color:var(--amber)} .htip em{font-style:normal;color:#ff6b5a}
+  .hbtn{margin-top:30px;padding:17px 62px;border-radius:999px;border:0;cursor:pointer;
+    font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:.22em;color:#2a0f04;
+    background:linear-gradient(180deg,#ffc79c,var(--amber) 42%,#e8622a);
+    box-shadow:0 16px 44px rgba(232,98,42,.4);transition:.16s}
+  .hbtn:hover{filter:brightness(1.08)} .hbtn:active{transform:translateY(2px) scale(.99)}
+  .hbest{margin-top:16px;font-family:var(--num);font-size:14px;color:var(--dim);letter-spacing:.1em}
+
+  /* ---------- 自适应 ---------- */
+  @media (max-height:820px){
+    .rcard{padding:18px 20px 16px}
+    .rtitle{font-size:clamp(26px,4.4vw,36px)}
+    .rsub{margin-top:8px;font-size:14px}
+    .rbig{font-size:clamp(34px,5.8vw,50px);margin-top:10px}
+    .rrow{margin-top:14px;padding:10px 0}
+    .rgoal{margin-top:12px}
+    #resCvs{height:138px}
+    .rbtns{margin-top:14px}
+  }
+  @media (max-width:820px){
+    #tele{display:none}
+  }
+  @media (max-width:900px){
+    .dash-left{width:172px}
+    .trow b{font-size:16px}
+    .dash-right{width:250px}
+    .fval{font-size:30px}
+    .fbar{height:140px;width:80px}
+  }
+  @media (max-width:680px){
+    #dash{height:54%;padding-left:12px;padding-right:12px}
+    .dash-left{display:none}
+    .dash-mid{min-width:0}
+    .speedo{width:min(300px,100%)}
+    .dash-right{width:158px;flex:0 0 158px;align-items:stretch}
+    .fzone{gap:8px}
+    .fbar{width:62px;height:120px}
+    .tick.t1200,.tick.t800{display:none}
+    .pedalbox{display:none}
+    .fval{font-size:26px}
+    .brake-btn{padding:12px 8px}
+    .brake-btn b{font-size:15px;letter-spacing:.06em}
+    .brake-btn span{font-size:10px}
+    /* 品牌与信号灯在窄屏改为上下分层，避免横向争抢空间 */
+    #topbar{padding-left:14px;padding-right:14px;padding-top:calc(env(safe-area-inset-top) + 12px)}
+    .logo{font-size:21px}
+    .bname{font-size:21px;letter-spacing:.06em}
+    .tbtn{width:34px;height:34px;font-size:12px}
+    #signal{top:calc(env(safe-area-inset-top) + 74px)}
+    .sig-title{font-size:17px}
+    .sig-sub{font-size:12.5px}
+    .sig-pill{font-size:11px;padding:5px 12px}
+    .lamp{width:44px;height:44px;font-size:10px}
+    .sp-state{letter-spacing:.16em;font-size:12px}
+    .sp-hint{font-size:12px;gap:12px}
+    .sp-tip{font-size:10.5px}
+    .rcard{padding:20px 16px 18px}
+    #resCvs{height:150px}
+    .rchart{padding:10px 12px 6px}
+    .rbtns{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <!-- 顶部品牌 / 按钮 -->
+  <div id="topbar">
+    <div class="brand">
+      <span class="logo">//</span>
+      <div>
+        <div class="bname">REDLINE</div>
+        <div class="bsub">极 限 制 动</div>
+      </div>
+    </div>
+    <div class="tbtns">
+      <button class="tbtn" id="btnSound" title="声音">♪</button>
+      <button class="tbtn" id="btnPause" title="暂停">❚❚</button>
+    </div>
+  </div>
+
+  <!-- 实时遥测 -->
+  <div id="tele">
+    <div class="tele-head">
+      <span class="t">实时遥测</span>
+      <span class="tele-legend">
+        <span class="lg v"><i></i>车速 km/h</span>
+        <span class="lg f"><i></i>力度 N</span>
+      </span>
+    </div>
+    <canvas id="teleCvs"></canvas>
+  </div>
+
+  <!-- 信号灯 -->
+  <div id="signal">
+    <div class="lights">
+      <div class="lamp stop on" id="lampStop">STOP</div>
+      <div class="lamp go" id="lampGo">BRAKE</div>
+    </div>
+    <div class="sig-title" id="sigTitle">红灯 · 请勿踩踏</div>
+    <div class="sig-pill" id="sigPill">自动加速 · 等待信号</div>
+    <div class="sig-sub" id="sigSub">100 km/h 前，请勿踩刹车</div>
+  </div>
+
+  <!-- 仪表台 -->
+  <div id="dash">
+    <div class="dash-left">
+      <div class="phead"><span class="bar"></span>本次测试 / Telemetry</div>
+      <div class="trow"><span>反应时间</span><b id="dReaction">—</b></div>
+      <div class="trow"><span>总用时 · 从 100 起计</span><b id="dTotal">0.00<small>s</small></b></div>
+      <div class="trow"><span>制动距离</span><b id="dDist">0.0<small>m</small></b></div>
+      <div class="trow best"><span>个人最快</span><b id="dBest">—</b></div>
+    </div>
+
+    <div class="dash-mid">
+      <div class="speedo">
+        <svg viewBox="0 0 320 240" aria-hidden="true">
+          <path d="M57.8 211 A118 118 0 1 1 262.2 211" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="9" stroke-linecap="round"></path>
+          <path id="spArcGlow" d="M57.8 211 A118 118 0 1 1 262.2 211" fill="none" stroke="rgba(255,122,60,.35)" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></path>
+          <path id="spArc" d="M57.8 211 A118 118 0 1 1 262.2 211" fill="none" stroke="#ff7a3c" stroke-width="8" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></path>
+          <g stroke="rgba(255,255,255,.42)" stroke-width="2.4" stroke-linecap="round">
+            <line x1="57.8" y1="211" x2="70.8" y2="203.5"></line>
+            <line x1="57.8" y1="93" x2="70.8" y2="100.5"></line>
+            <line x1="160" y1="34" x2="160" y2="49"></line>
+            <line x1="262.2" y1="93" x2="249.2" y2="100.5"></line>
+            <line x1="262.2" y1="211" x2="249.2" y2="203.5"></line>
+          </g>
+          <g fill="#7f8b98" font-size="13" font-family="Oswald,sans-serif" text-anchor="middle">
+            <text x="38.8" y="226">0</text>
+            <text x="38.8" y="86">50</text>
+            <text x="160" y="16">100</text>
+            <text x="281.2" y="86">150</text>
+            <text x="281.2" y="226">200</text>
+          </g>
+        </svg>
+        <div class="sp-num"><span id="dSpeed">000</span><em>KM / H</em></div>
+      </div>
+      <div class="sp-state" id="spState">待 命</div>
+      <div class="sp-hint"><span id="spHintL">100 km/h 起计时</span><span class="go" id="spHintR">等待绿灯</span></div>
+      <div class="sp-tip">踩到 1500 抓地极限 · 过压会断 · 松脚回升</div>
+    </div>
+
+    <div class="dash-right">
+      <div class="phead"><span class="bar"></span>刹车力度 / Brake Force<em class="absLed" id="absLed">ABS</em></div>
+      <div class="fval" id="fValWrap"><b id="dForce">0</b><span>N</span></div>
+      <div class="fdesc" id="fState">踩到 1500 N 即到抓地极限</div>
+      <div class="fzone">
+        <div class="fbar" id="fBar">
+          <div class="seg" id="fSeg"></div>
+          <div class="fbar-cut"></div>
+          <div class="fbar-break"></div>
+          <div class="fbar-grip"></div>
+          <span class="tick t1600">1600 N <em>过压</em></span>
+          <span class="tick tovf" id="fOvf">超 +0</span>
+          <span class="tick t1200">1200</span>
+          <span class="tick t800">800</span>
+          <span class="tick t0">0 N</span>
+        </div>
+        <div class="pedalbox">
+          <svg id="pedalSvg" viewBox="0 0 120 180">
+            <rect x="50" y="2" width="26" height="16" rx="3" fill="#464d56"></rect>
+            <polygon points="58,16 70,16 74,100 54,100" fill="url(#pg)"></polygon>
+            <defs>
+              <linearGradient id="pg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#6b7480"></stop>
+                <stop offset=".45" stop-color="#9aa4b0"></stop>
+                <stop offset="1" stop-color="#454c55"></stop>
+              </linearGradient>
+            </defs>
+            <rect x="24" y="98" width="76" height="48" rx="10" fill="#24272b"></rect>
+            <rect x="24" y="98" width="76" height="48" rx="10" fill="none" stroke="#42474e"></rect>
+            <g stroke="#3d4247" stroke-width="4" stroke-linecap="round">
+              <line x1="33" y1="110" x2="91" y2="110"></line>
+              <line x1="33" y1="121" x2="91" y2="121"></line>
+              <line x1="33" y1="132" x2="91" y2="132"></line>
+            </g>
+          </svg>
+          <span class="plabel">踏板行程</span>
+        </div>
+      </div>
+      <button class="brake-btn" id="brakeBtn">
+        <b>踩 下 刹 车</b>
+        <span>按住持续加力</span>
+      </button>
+      <div class="fnote">1500 N 抓地极限 · 全力一脚约 16xx N · 过压立即松开</div>
+      <div class="fnote2">空格也可踩下，松开抬起</div>
+    </div>
+  </div>
+
+  <!-- 结果页 -->
+  <div id="result" class="hidden">
+    <div class="rcard">
+      <div class="rstat" id="rStat">TEST FAILED</div>
+      <div class="rtitle" id="rTitle">踩早了</div>
+      <div class="rsub" id="rSub">等到 100 km/h 绿色信号，再踩下踏板。</div>
+      <div class="rbig" id="rBig">0</div>
+      <div class="rbig-t" id="rBigT">踩下时速度 · 未达到出手阈值</div>
+      <div class="rrow">
+        <div class="rcol"><div class="k">反应时间</div><div class="v" id="rReaction">—</div></div>
+        <div class="rcol"><div class="k">入刹速度</div><div class="v" id="rEntry">—</div></div>
+        <div class="rcol"><div class="k">峰值力度</div><div class="v" id="rPeak">—</div></div>
+      </div>
+      <div class="rgoal">挑战目标：<b>100 km/h</b> 后，用最短时间安全停稳</div>
+      <div class="rchart">
+        <div class="ch">
+          <div>本局曲线 · 竖虚线为计时起点</div>
+          <div class="lg">
+            <span style="color:var(--green)">车速 km/h</span>
+            <span style="color:var(--amber)">力度 N</span>
+          </div>
+        </div>
+        <canvas id="resCvs"></canvas>
+        <div class="rfoot" id="rFoot"></div>
+      </div>
+      <div class="rbtns">
+        <button class="rbtn" id="btnRetry">再次挑战 ↗</button>
+        <button class="rbtn ghost" id="btnHome">返回首页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 首页 -->
+  <div id="home">
+    <div class="hwrap">
+      <div class="hlogo"><i>//</i> REDLINE</div>
+      <div class="hsub">极 限 制 动</div>
+      <div class="htip">
+        车辆自动加速，越过 <b>100 km/h</b> 绿灯后仍会继续加速<br>
+        立刻踩死刹车，踩到 <b>1500 N</b> 就是抓地极限，ABS 会介入削峰<br>
+        全力一脚约 <b>16xx N</b>（腿力软饱和），冲到 <b>1600 N</b> 会点燃断裂引信，0.5~1.5 s 内松开即可自救<br>
+        松脚车辆会重新加速，冲到 <b>200 km/h</b> 即爆表<br>
+        <em>100 km/h 前踩下 · 过压超过引信时限 · 车速到 200 km/h 均判定失败</em>
+      </div>
+      <button class="hbtn" id="btnStart">开 始 测 试</button>
+      <div class="hbest" id="hBest"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+
+/* ================= 参数 ================= */
+const KMH = 3.6;
+const TARGET_KMH = 100;
+const TARGET_V = TARGET_KMH / KMH;      // 27.78 m/s
+const GAUGE_KMH = 200;                  // 仪表上限：冲到即“爆表”
+const GAUGE_V = GAUGE_KMH / KMH;        // 55.56 m/s
+const GRIP_N = 1500;                    // 抓地极限：ABS 介入阈值，超过不再有额外制动增益
+const BREAK_N = 1600;                   // 过压阈值：触到即点燃断裂引信
+const FSCALE_N = 1600;                  // 力度条 / 图表满量程（卡钳压力显示上限）
+                                        // 只是“显示量程”，不是力的硬上限；曲线会按真实峰值自适应
+const DECEL_PER_N = 9.8 / GRIP_N;       // N → m/s²（踩到抓地极限约 9.8 m/s² ≈ 1g）
+const RATE_UP = 1050;                   // 起脚速度 N/s（膝盖点之前，正常加力）
+const KNEE_N = 1580;                    // 膝盖点 N：踏板到底、腿力见底，再往下就只能“硬挤”
+const SQUEEZE = 60;                     // 膝盖点之后的硬挤速率 N/s（约 0.5s 只涨 30 N）
+const CEIL_N = 1800;                    // 软天花板 N：再挤也平滑逼近它，不是硬钳制
+                                        // —— 两段式腿力模型 ——
+                                        // 起脚段：一路 1050 N/s 冲到 1580，1.5s 左右到抓地极限；
+                                        // 硬挤段：过了膝盖点只按 60 N/s 涨，且越接近 CEIL_N 越挤不动。
+                                        // 结果：一脚全力踩下去，峰值稳定落在 16xx~17xx，
+                                        // 对齐懂车帝实测尊界V800 断裂瞬间的 1589 / 1596 / 1612 N。
+                                        // 副作用（正面的）：1580~1600 这段变得很好控，过压线附近可以精细操作。
+const RATE_DOWN = 2000;                 // 抬脚泄力 N/s
+const ACCEL = 9.0;                      // 0 → 100 自动加速度 m/s²
+const ACCEL_HI = 6.0;                   // 100 以后继续加速（功率下降，加速变缓）
+const ENGAGE_N = 300;                   // 低于此力度，牵引力逐渐恢复 → 车速回升
+const ABS_PERIOD = 0.075;               // ABS 回弹周期 s（约 13 Hz）
+const ABS_KICK = 190;                   // 每次回弹卸掉的卡钳压力 N
+const FUSE_MIN = 0.5, FUSE_MAX = 1.5;   // 过压后随机断裂倒计时 s
+
+/* ================= DOM ================= */
+const $ = id => document.getElementById(id);
+const scene = $('scene'), sctx = scene.getContext('2d');
+const teleCvs = $('teleCvs'), teleCtx = teleCvs.getContext('2d');
+const resCvs = $('resCvs'), resCtx = resCvs.getContext('2d');
+const elSpeed=$('dSpeed'), elState=$('spState'), elForce=$('dForce'), elFVal=$('fValWrap');
+const elReaction=$('dReaction'), elTotal=$('dTotal'), elDist=$('dDist'), elBest=$('dBest');
+const elHintL=$('spHintL'), elHintR=$('spHintR');
+const lampStop=$('lampStop'), lampGo=$('lampGo');
+const sigTitle=$('sigTitle'), sigPill=$('sigPill'), sigSub=$('sigSub');
+const arc=$('spArc'), arcGlow=$('spArcGlow');
+const fSeg=$('fSeg'), fBar=$('fBar'), fState=$('fState'), absLed=$('absLed'), fOvf=$('fOvf');
+const pedalSvg=$('pedalSvg'), brakeBtn=$('brakeBtn');
+const homeEl=$('home'), resultEl=$('result');
+const teleEl=$('tele');
+
+/* ================= 音频 ================= */
+let AC=null, muted=false;
+function actx(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } }
+  if(AC && AC.state==='suspended') AC.resume();
+  return AC;
+}
+function tone(f,dur,type,vol,to){
+  if(muted) return; const a=actx(); if(!a) return;
+  try{
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.value=f;
+    if(to) o.frequency.exponentialRampToValueAtTime(Math.max(20,to), a.currentTime+dur);
+    g.gain.value=vol||.05;
+    g.gain.exponentialRampToValueAtTime(.0001, a.currentTime+dur);
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.02);
+  }catch(e){}
+}
+function noise(dur,vol,cut){
+  if(muted) return; const a=actx(); if(!a) return;
+  try{
+    const n=Math.floor(a.sampleRate*dur), buf=a.createBuffer(1,n,a.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);
+    const s=a.createBufferSource(); s.buffer=buf;
+    const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=cut||800;
+    const g=a.createGain(); g.gain.value=vol||.2;
+    s.connect(f); f.connect(g); g.connect(a.destination); s.start();
+  }catch(e){}
+}
+
+/* ================= 尺寸 ================= */
+let W=0,H=0,DPR=1,hz=0,cx=0,roadHalf=5.5,FOC=700;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 1.75);
+  W = window.innerWidth; H = window.innerHeight;
+  scene.width=Math.floor(W*DPR); scene.height=Math.floor(H*DPR);
+  scene.style.width=W+'px'; scene.style.height=H+'px';
+  sctx.setTransform(DPR,0,0,DPR,0,0);
+  cx = W/2; FOC = H*0.80;
+  hz = H*0.305;
+  roadHalf = 3.05*W/H;
+  fitCanvas(teleCvs, teleCtx);
+  fitCanvas(resCvs, resCtx);
+  buildScenery();
+}
+function fitCanvas(c,g){
+  const w=c.clientWidth||c.parentElement.clientWidth, h=c.clientHeight;
+  if(!w||!h) return;                       // 隐藏时不做尺寸设置，交给 ensureCanvas 惰性处理
+  c.width=Math.floor(w*DPR); c.height=Math.floor(h*DPR);
+  g.setTransform(DPR,0,0,DPR,0,0);
+}
+/* 惰性尺寸校正：元素从 display:none 变为可见后，位图尺寸会自动补齐 */
+function ensureCanvas(c,g){
+  const w=c.clientWidth, h=c.clientHeight;
+  if(!w||!h) return false;
+  const bw=Math.floor(w*DPR), bh=Math.floor(h*DPR);
+  if(c.width!==bw || c.height!==bh){
+    c.width=bw; c.height=bh; g.setTransform(DPR,0,0,DPR,0,0);
+  }
+  return true;
+}
+window.addEventListener('resize', ()=>{ resize(); if(G.phase==='done') drawResultChart(); });
+window.addEventListener('orientationchange', ()=>setTimeout(resize,140));
+
+/* ================= 风景：山体剪影 ================= */
+let RNG=1; const rnd=()=>{ RNG=(RNG*1664525+1013904223)%4294967296; return RNG/4294967296; };
+let mountains=[];
+function buildScenery(){
+  mountains=[];
+  const layers=[{n:16,h:0.20,c:'#2a2233',y:0.0},{n:12,h:0.28,c:'#221c2b',y:0.012},{n:9,h:0.36,c:'#171420',y:0.024}];
+  for(let li=0; li<layers.length; li++){
+    const L=layers[li], pts=[]; RNG=97+li*131;
+    const N=L.n;
+    for(let i=0;i<=N;i++){
+      const x=i/N*W - W*0.06;
+      const base=hz - H*L.h*(0.35+0.65*rnd());
+      pts.push({x:x, y:base});
+    }
+    mountains.push({pts:pts, color:L.c, yOff:L.y*H});
+  }
+}
+
+/* ================= 场景渲染 ================= */
+let shakeX=0, shakeY=0;
+function drawScene(dt){
+  sctx.setTransform(DPR,0,0,DPR,0,0);
+  sctx.clearRect(0,0,W,H);
+  sctx.save();
+  sctx.translate(shakeX, shakeY);
+  const hzy = hz + pitch;
+
+  drawSky(hzy);
+  drawMountains(hzy);
+  drawRoad(hzy);
+  drawCockpit(hzy);
+  drawVignette();
+  sctx.restore();
+}
+
+function drawSky(hzy){
+  const g = sctx.createLinearGradient(0,0,0,hzy);
+  g.addColorStop(0,'#241a33');
+  g.addColorStop(.28,'#3d2740');
+  g.addColorStop(.52,'#7b3f38');
+  g.addColorStop(.72,'#c86a35');
+  g.addColorStop(.88,'#f0913f');
+  g.addColorStop(1,'#ffc069');
+  sctx.fillStyle=g; sctx.fillRect(-60,0,W+120,hzy+H*0.02);
+
+  // 落日
+  const sx=cx-W*0.10, sy=hzy-H*0.012;
+  const sg=sctx.createRadialGradient(sx,sy,0,sx,sy,H*0.42);
+  sg.addColorStop(0,'rgba(255,214,140,.95)');
+  sg.addColorStop(.10,'rgba(255,180,90,.62)');
+  sg.addColorStop(.34,'rgba(240,120,60,.24)');
+  sg.addColorStop(1,'rgba(240,120,60,0)');
+  sctx.fillStyle=sg;
+  sctx.beginPath(); sctx.arc(sx,sy,H*0.42,0,Math.PI*2); sctx.fill();
+  sctx.fillStyle='rgba(255,236,196,.92)';
+  sctx.beginPath(); sctx.arc(sx,sy,H*0.030,0,Math.PI*2); sctx.fill();
+
+  // 云带
+  sctx.save();
+  for(let i=0;i<9;i++){
+    const y=hzy*(0.12+0.075*i);
+    const w=W*(0.28+((i*37)%5)*0.11);
+    const x=(-W*0.06)+((i*211)%7)*W*0.16;
+    const a=0.05+0.055*((i*53)%4)/3;
+    sctx.globalAlpha=a;
+    sctx.fillStyle= i<4 ? '#2b2136' : '#f0a05c';
+    sctx.beginPath(); sctx.ellipse(x,y,w*0.5,H*0.011+ i*1.1,0,0,Math.PI*2); sctx.fill();
+  }
+  sctx.restore();
+
+  // 地平线雾
+  const hg=sctx.createLinearGradient(0,hzy-H*0.09,0,hzy+H*0.01);
+  hg.addColorStop(0,'rgba(255,190,120,0)');
+  hg.addColorStop(1,'rgba(255,205,150,.35)');
+  sctx.fillStyle=hg; sctx.fillRect(-60,hzy-H*0.09,W+120,H*0.10);
+}
+
+function drawMountains(hzy){
+  sctx.save();
+  for(let i=mountains.length-1;i>=0;i--){
+    const M=mountains[i];
+    sctx.fillStyle=M.color;
+    sctx.globalAlpha = 0.92;
+    sctx.beginPath();
+    sctx.moveTo(-W*0.1, hzy+2);
+    for(const p of M.pts){ sctx.lineTo(p.x, p.y - (hz-hzy) + M.yOff); }
+    sctx.lineTo(W*1.1, hzy+2);
+    sctx.closePath(); sctx.fill();
+    // 山脊受光
+    sctx.globalAlpha=0.16; sctx.strokeStyle='#ffb877'; sctx.lineWidth=1.4;
+    sctx.beginPath();
+    for(let k=0;k<M.pts.length;k++){
+      const p=M.pts[k];
+      if(k===0) sctx.moveTo(p.x,p.y-(hz-hzy)+M.yOff); else sctx.lineTo(p.x,p.y-(hz-hzy)+M.yOff);
+    }
+    sctx.stroke();
+  }
+  sctx.restore();
+}
+
+/* ---------- 路面 ---------- */
+function prj(worldX, z, hzy){ const s=FOC/z; return { x:cx+worldX*s, y:hzy+s, s:s }; }
+function drawRoad(hzy){
+  const zNear = FOC/Math.max(40,(H-hzy));
+  const ZFAR = 420;
+
+  // 路基
+  const gg=sctx.createLinearGradient(0,hzy,0,H);
+  gg.addColorStop(0,'#171420'); gg.addColorStop(.25,'#141220'); gg.addColorStop(1,'#0d0c14');
+  sctx.fillStyle=gg; sctx.fillRect(-60,hzy,W+120,H-hzy+60);
+
+  // 公路（近处宽，远处收于灭点）
+  const nearL=prj(-roadHalf,zNear,hzy), nearR=prj(roadHalf,zNear,hzy);
+  const rg=sctx.createLinearGradient(0,hzy,0,H);
+  rg.addColorStop(0,'#2b2b33'); rg.addColorStop(.35,'#24242b'); rg.addColorStop(1,'#18181e');
+  sctx.fillStyle=rg;
+  sctx.beginPath();
+  sctx.moveTo(cx,hzy); sctx.lineTo(nearR.x, nearR.y); sctx.lineTo(nearR.x, H+80);
+  sctx.lineTo(nearL.x, H+80); sctx.lineTo(nearL.x, nearL.y); sctx.closePath(); sctx.fill();
+
+  // 路肩
+  const sg=sctx.createLinearGradient(0,hzy,0,H);
+  sg.addColorStop(0,'rgba(120,104,96,0)'); sg.addColorStop(1,'rgba(150,132,116,.32)');
+  sctx.fillStyle=sg;
+  sctx.beginPath();
+  sctx.moveTo(nearL.x,nearL.y); sctx.lineTo(nearL.x-W*0.22,nearL.y+6);
+  sctx.lineTo(nearL.x-W*0.60,H+80); sctx.lineTo(nearL.x,H+80); sctx.closePath(); sctx.fill();
+  sctx.beginPath();
+  sctx.moveTo(nearR.x,nearR.y); sctx.lineTo(nearR.x+W*0.22,nearR.y+6);
+  sctx.lineTo(nearR.x+W*0.60,H+80); sctx.lineTo(nearR.x,H+80); sctx.closePath(); sctx.fill();
+
+  // 车道虚线
+  const spacing=14, dashLen=5.4, dist=G.dist;
+  let z0=spacing-(dist%spacing);
+  sctx.fillStyle='rgba(240,242,245,.80)';
+  for(let i=0;i<64;i++){
+    const zA=z0+i*spacing, zB=zA+dashLen;
+    if(zA>ZFAR) break;
+    if(zA<zNear) continue;
+    const a=prj(-1.85,zA,hzy), b=prj(1.85,zA,hzy), c=prj(1.85,zB,hzy), d=prj(-1.85,zB,hzy);
+    const lwA=0.09*a.s, lwB=0.09*d.s;
+    sctx.globalAlpha = Math.max(0, Math.min(1, 1.25 - zA/ZFAR*1.25));
+    sctx.beginPath();
+    sctx.moveTo(a.x-lwA, a.y); sctx.lineTo(a.x+lwA, a.y);
+    sctx.lineTo(c.x+lwB, c.y); sctx.lineTo(c.x-lwB, c.y);
+    sctx.closePath(); sctx.fill();
+  }
+  sctx.globalAlpha=1;
+
+  // 边线
+  [-roadHalf, roadHalf].forEach(dx=>{
+    const n=prj(dx,zNear,hzy);
+    sctx.strokeStyle='rgba(235,238,242,.62)'; sctx.lineWidth=Math.max(1.5,2.2);
+    sctx.beginPath(); sctx.moveTo(n.x,n.y); sctx.lineTo(cx,hzy); sctx.stroke();
+  });
+
+  // 护栏（左右）
+  [1,-1].forEach(side=>{
+    const rx=(roadHalf+1.55)*side;
+    const nTop=prj(rx,zNear,hzy);
+    sctx.strokeStyle='rgba(212,206,196,.34)'; sctx.lineWidth=Math.max(1.6,nTop.s*0.10);
+    sctx.beginPath(); sctx.moveTo(nTop.x, nTop.y-nTop.s*0.92); sctx.lineTo(cx, hzy-nTop.s*0.06); sctx.stroke();
+    let pz0=10-(dist%10);
+    sctx.fillStyle='rgba(196,190,180,.34)';
+    for(let i=0;i<40;i++){
+      const z=pz0+i*10; if(z<zNear*1.05) continue; if(z>ZFAR*0.55) break;
+      const p=prj(rx,z,hzy);
+      const hgt=p.s*1.05;
+      sctx.fillRect(p.x-p.s*0.035, p.y-hgt, p.s*0.07, hgt);
+    }
+  });
+
+  // 路面速度纹理
+  if(G.v>4){
+    sctx.save();
+    sctx.globalAlpha=Math.min(.16, G.v/260);
+    sctx.strokeStyle='#cfd6de'; sctx.lineWidth=1;
+    for(let i=0;i<14;i++){
+      const t=(i/14);
+      const z=zNear + Math.pow(t,2.2)*(ZFAR*0.35);
+      const p=prj(0,z,hzy);
+      const w=roadHalf*FOC/z;
+      sctx.beginPath(); sctx.moveTo(p.x-w*0.9,p.y); sctx.lineTo(p.x-w*0.2,p.y); sctx.stroke();
+      sctx.beginPath(); sctx.moveTo(p.x+w*0.2,p.y); sctx.lineTo(p.x+w*0.9,p.y); sctx.stroke();
+    }
+    sctx.restore();
+  }
+}
+
+/* ---------- 座舱 ---------- */
+function drawCockpit(hzy){
+  const w=W,h=H;
+  const dashTop=h*0.445;
+
+  // 顶棚
+  sctx.fillStyle='#08090c';
+  sctx.beginPath();
+  sctx.moveTo(-10,-10); sctx.lineTo(w+10,-10); sctx.lineTo(w+10,h*0.035);
+  sctx.quadraticCurveTo(w*0.5,h*0.075,-10,h*0.035);
+  sctx.closePath(); sctx.fill();
+
+  // 后视镜
+  sctx.fillStyle='#111318';
+  roundRect(sctx, w*0.5-w*0.062, h*0.012, w*0.124, h*0.045, 8); sctx.fill();
+  sctx.strokeStyle='rgba(255,255,255,.10)'; sctx.lineWidth=1;
+  roundRect(sctx, w*0.5-w*0.062, h*0.012, w*0.124, h*0.045, 8); sctx.stroke();
+  sctx.fillStyle='#0c0e12';
+  roundRect(sctx, w*0.5-w*0.056, h*0.018, w*0.112, h*0.031, 5); sctx.fill();
+
+  // A 柱
+  const pil=(x0,x1,y0,y1,x2,x3,y2,y3,tanSide)=>{
+    const g=sctx.createLinearGradient(x0,0,x2,0);
+    g.addColorStop(0,'#14161b'); g.addColorStop(.6,'#1b1d22'); g.addColorStop(1,'#07080b');
+    sctx.fillStyle=g;
+    sctx.beginPath();
+    sctx.moveTo(x0,y0); sctx.lineTo(x1,y1); sctx.lineTo(x2,y2); sctx.lineTo(x3,y3);
+    sctx.closePath(); sctx.fill();
+    sctx.strokeStyle='rgba(150,120,88,.28)'; sctx.lineWidth=2;
+    sctx.beginPath(); sctx.moveTo(x0,y0); sctx.lineTo(x3,y3); sctx.stroke();
+  };
+  pil(-10,-10,w*0.058,w*0.145,w*0.072,h*0.62,h*0.01,h*0.76);
+  pil(w+10,w+10,w*0.058,w*0.895,w*0.938,h*0.58,h*0.99,h*0.72);
+
+  // 仪表台
+  const dg=sctx.createLinearGradient(0,dashTop,0,h);
+  dg.addColorStop(0,'#1c1e23'); dg.addColorStop(.18,'#131519'); dg.addColorStop(.55,'#0b0c10'); dg.addColorStop(1,'#070809');
+  sctx.fillStyle=dg;
+  sctx.beginPath();
+  sctx.moveTo(-10,h*0.72);
+  sctx.quadraticCurveTo(w*0.5, dashTop, w+10, h*0.72);
+  sctx.lineTo(w+10,h+10); sctx.lineTo(-10,h+10); sctx.closePath(); sctx.fill();
+  // 台面高光
+  sctx.strokeStyle='rgba(255,196,150,.16)'; sctx.lineWidth=2.5;
+  sctx.beginPath();
+  sctx.moveTo(-10,h*0.718); sctx.quadraticCurveTo(w*0.5, dashTop+2, w+10, h*0.718); sctx.stroke();
+
+  // 方向盘
+  const wx=w*0.34, wy=h*1.13, rx=w*0.235, ry=h*0.315;
+  sctx.save();
+  sctx.lineCap='round';
+  sctx.strokeStyle='#0d0f12'; sctx.lineWidth=h*0.052;
+  sctx.beginPath(); sctx.ellipse(wx,wy,rx,ry,0,Math.PI*1.02,Math.PI*1.98); sctx.stroke();
+  sctx.strokeStyle='#8b7358'; sctx.lineWidth=h*0.030;
+  sctx.beginPath(); sctx.ellipse(wx,wy,rx*0.985,ry*0.985,0,Math.PI*1.10,Math.PI*1.72); sctx.stroke();
+  sctx.strokeStyle='rgba(255,225,190,.16)'; sctx.lineWidth=2;
+  sctx.beginPath(); sctx.ellipse(wx,wy,rx*1.01,ry*1.01,0,Math.PI*1.12,Math.PI*1.70); sctx.stroke();
+  sctx.restore();
+
+  // 挡风反光
+  const rg=sctx.createLinearGradient(0,0,w*0.85,h*0.42);
+  rg.addColorStop(0,'rgba(255,255,255,.055)');
+  rg.addColorStop(.42,'rgba(255,255,255,.012)');
+  rg.addColorStop(1,'rgba(255,255,255,0)');
+  sctx.fillStyle=rg; sctx.fillRect(-60,0,W+120,dashTop);
+}
+
+function drawVignette(){
+  const g=sctx.createRadialGradient(cx,H*0.42,Math.min(W,H)*0.28,cx,H*0.46,Math.max(W,H)*0.78);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(.62,'rgba(0,0,0,.20)');
+  g.addColorStop(1,'rgba(0,0,0,.72)');
+  sctx.fillStyle=g; sctx.fillRect(-60,-60,W+120,H+120);
+}
+
+function roundRect(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y);
+  g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r);
+  g.closePath();
+}
+
+/* ================= 状态 ================= */
+const G = {
+  phase:'ready', v:0, dist:0, force:0, eff:0, holding:false,
+  t:0, tRun:0, t100:null, reaction:null, peak:0, entryV:0, peakV:0,
+  startDist:0, earlyV:0, samples:[], fail:null, paused:false, niubest:false,
+  absOn:false, absPhase:0, absSnd:0, shake:0, crash:0, fuse:null
+};
+const BEST_KEY='redlineBrakeBest';
+let best = parseFloat(localStorage.getItem(BEST_KEY)||'');
+if(!isFinite(best)) best=null;
+
+function sample(){
+  if(G.samples.length>900) return;
+  const s=G.samples[G.samples.length-1];
+  if(s && G.t-s.t < 0.02) return;
+  G.samples.push({t:G.t, v:G.v, f:G.force});
+}
+
+/* ================= 流程 ================= */
+function showHome(){
+  homeEl.classList.remove('hidden'); resultEl.classList.add('hidden');
+  G.phase='ready'; G.v=0; G.dist=0; G.force=0; G.holding=false;
+  G.samples=[]; G.t=0; G.tRun=0; G.t100=null; G.reaction=null;
+  G.peak=0; G.fail=null; G.earlyV=0; G.paused=false; G.peakV=0;
+  resetAbs();
+  $('hBest').textContent = best ? ('个人最快 '+best.toFixed(3)+' s') : '暂无记录';
+  setSignal('ready'); updateHud();
+}
+function resetAbs(){
+  G.eff=0; G.absOn=false; G.absPhase=0; G.absSnd=0;
+  G.shake=0; G.crash=0; G.fuse=null;
+}
+function startRun(){
+  actx();
+  homeEl.classList.add('hidden'); resultEl.classList.add('hidden');
+  G.phase='accel'; G.v=0; G.dist=0; G.force=0; G.holding=false;
+  G.samples=[{t:0,v:0,f:0}]; G.t=0; G.tRun=0; G.t100=null; G.reaction=null;
+  G.peak=0; G.fail=null; G.earlyV=0; G.paused=false; G.niubest=false; G.peakV=0;
+  resetAbs();
+  setSignal('accel'); updateHud();
+  tone(440,.10,'triangle',.05,660);
+  setTimeout(()=>tone(440,.10,'triangle',.05,660),150);
+  setTimeout(()=>tone(660,.22,'triangle',.06,990),300);
+}
+function greenLight(){
+  G.t100=G.t; G.startDist=G.dist; G.entryV=G.v; G.peakV=G.v; setSignal('run');
+  tone(1180,.24,'sine',.07); setTimeout(()=>tone(1560,.30,'sine',.06),110);
+}
+function failRun(reason){
+  G.fail=reason; G.phase='done'; G.holding=false; G.fuse=null; G.shake=0;
+  G.crash = reason==='break' ? 1 : 0.42;
+  if(reason==='early') noise(.35,.35,420);
+  if(reason==='break'){
+    noise(.75,.5,700);
+    tone(140,.5,'sawtooth',.10,55);
+    setTimeout(()=>noise(.4,.3,320),220);
+  }
+  if(reason==='gauge'){
+    noise(.7,.42,1200);
+    tone(180,.6,'square',.09,90);
+    setTimeout(()=>tone(180,.6,'square',.09,90),300);
+  }
+  setSignal('done');
+  setTimeout(showResult, 620);
+  sample();
+}
+function finishRun(){
+  G.phase='done'; G.holding=false; G.fuse=null; G.shake=0; G.crash=0.3;
+  setSignal('done');
+  const total=G.tRun;
+  if(best===null || total<best){ best=total; G.niubest=true; try{ localStorage.setItem(BEST_KEY, best.toFixed(4)); }catch(e){} }
+  tone(880,.13,'triangle',.06); setTimeout(()=>tone(1320,.20,'triangle',.055),110);
+  noise(.2,.14,1400);
+  setTimeout(showResult, 700);
+  sample();
+}
+
+/* ================= 输入 ================= */
+const pressed=new Set();
+function isUI(t){ return t.closest && t.closest('.tbtn,.rbtn,.hbtn'); }
+function onDown(e){
+  if(isUI(e.target)) return;
+  if(G.phase==='ready'||G.phase==='done') return;
+  pressed.add(e.pointerId);
+  G.holding=true;
+  if(G.phase==='accel'){ G.earlyV=G.v; failRun('early'); return; }
+  if(G.phase==='run' && G.reaction===null){
+    G.reaction=G.tRun;
+    tone(300,.05,'square',.04);
+  }
+}
+function onUp(e){
+  if(e) pressed.delete(e.pointerId);
+  if(pressed.size===0) G.holding=false;
+}
+window.addEventListener('pointerdown', onDown);
+window.addEventListener('pointerup', onUp);
+window.addEventListener('pointercancel', onUp);
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); if(!e.repeat) onDown({target:document.body, pointerId:'kb'}); }
+});
+window.addEventListener('keyup', e=>{ if(e.code==='Space'){ e.preventDefault(); onUp({pointerId:'kb'}); } });
+window.addEventListener('contextmenu', e=>e.preventDefault());
+function cancelPress(){ pressed.clear(); G.holding=false; }
+
+/* ================= 主循环 ================= */
+function update(dt){
+  G.t += dt;
+  if(G.phase==='accel'){
+    G.v += ACCEL*dt; G.dist += G.v*dt;
+    if(G.v>=TARGET_V){ G.v=TARGET_V; G.phase='run'; G.tRun=0; greenLight(); }
+    sample();
+  }else if(G.phase==='run'){
+    G.tRun += dt;
+
+    // 脚踏力度：踩多深就多深，但人的腿力有极限 —— 踏板到底之后只能一点点“硬挤”。
+    // 仍然是软上限（没有 Math.min 钳制），所以峰值不会被截成同一个数。
+    if(G.holding){
+      const rate = G.force < KNEE_N
+        ? RATE_UP
+        : Math.min(SQUEEZE, RATE_UP*(1-Math.pow(Math.min(1,G.force/CEIL_N),4)));
+      G.force += rate*dt;
+    }
+    else G.force = Math.max(0, G.force - RATE_DOWN*dt);
+    if(G.force>G.peak) G.peak=G.force;
+
+    // ABS：踩过抓地极限后卡钳压力被反复卸掉，踏板回弹、车身抖动
+    const wasAbs=G.absOn;
+    G.absOn = G.force >= GRIP_N;
+    if(G.absOn && !wasAbs){ G.absPhase=0; tone(320,.07,'square',.035,170); }
+    if(G.absOn){
+      G.absPhase += dt;
+      if(G.absPhase>=ABS_PERIOD) G.absPhase -= ABS_PERIOD;
+      G.absSnd += dt;
+      if(G.absSnd>=0.13){ G.absSnd=0; tone(1400+Math.random()*1000,.02,'square',.009); }
+    }else{ G.absPhase=0; G.absSnd=0; }
+    const kick = G.absOn ? ABS_KICK*(1-G.absPhase/ABS_PERIOD) : 0;
+    G.eff = Math.max(0, Math.min(G.force,GRIP_N) - kick);
+
+    // 过压引信：触到 1600 N 点燃，随机 0.5~1.5 s 后断裂；
+    // 期间松回 1600 N 以下引信即熄灭，可以自救后重新点燃
+    if(G.force>=BREAK_N){
+      if(G.fuse===null){ G.fuse=FUSE_MIN+Math.random()*(FUSE_MAX-FUSE_MIN); fuseAlarm(); }
+      G.fuse -= dt;
+      // 峰值照实记录，不再写成固定值 —— 踩得越猛、撑得越久，成绩里的 N 越高
+      if(G.fuse<=0){ if(G.force>G.peak) G.peak=G.force; failRun('break'); return; }
+    }else if(G.fuse!==null){ G.fuse=null; }
+
+    // 牵引力 + 制动
+    const eng=Math.max(0, 1-G.eff/ENGAGE_N);
+    const nv=G.v + (ACCEL_HI*eng - G.eff*DECEL_PER_N)*dt;
+    if(nv<=0){ G.v=0; finishRun(); return; }
+    G.v = Math.min(nv, GAUGE_V);
+    if(G.v>G.peakV) G.peakV=G.v;
+    if(nv>=GAUGE_V){ failRun('gauge'); return; }
+    G.dist+=G.v*dt;
+    sample();
+    if(G.eff>1200 && Math.random()<0.25) tone(2200+Math.random()*700,.05,'sawtooth',.012);
+  }
+}
+function fuseAlarm(){ noise(.16,.20,1000); tone(780,.12,'square',.05,540); }
+
+let lastT=0, teleAcc=0, pitch=0;
+function frame(t){
+  if(!lastT) lastT=t;
+  let dt=(t-lastT)/1000; lastT=t;
+  dt=Math.min(dt,0.05);
+  if(!G.paused && (G.phase==='accel'||G.phase==='run')) update(dt);
+
+  const a=(G.phase==='run'?G.eff*DECEL_PER_N:0);
+  const tp=-Math.min(1,a/9.8)*H*0.024;
+  pitch += (tp-pitch)*Math.min(1,dt*9);
+
+  // 抖动：制动基础抖动 + ABS 介入的剧烈抖动 + 断裂/停稳后的余震
+  const sTarget = (G.phase==='run' && G.absOn) ? Math.min(1, 0.45+(G.force-GRIP_N)/120) : 0;
+  G.shake += (sTarget-G.shake)*Math.min(1, dt*(sTarget>G.shake?16:6));
+  if(G.crash>0 && G.phase==='done') G.crash=Math.max(0, G.crash-dt/2.6);
+  const sh=(G.phase==='run'?G.eff/GRIP_N:0)*3.2 + G.shake*9 + G.crash*(G.fail==='break'?16:5);
+  shakeX=(Math.random()*2-1)*sh; shakeY=(Math.random()*2-1)*sh;
+
+  drawScene(dt);
+  updateHud();
+  teleAcc+=dt;
+  if(teleAcc>0.05){ teleAcc=0; drawTele(); }
+  requestAnimationFrame(frame);
+}
+
+/* ================= 信号灯 ================= */
+function setSignal(state){
+  const on=(el,ok)=>{ el.classList.toggle('on',ok); };
+  if(state==='accel'||state==='ready'){
+    on(lampStop,true); on(lampGo,false);
+    sigTitle.textContent='红灯 · 请勿踩踏';
+    sigTitle.classList.remove('go');
+    sigPill.textContent='自动加速 · 等待信号';
+    sigSub.innerHTML='<b>100 km/h</b> 前，请勿踩刹车';
+  }else if(state==='run'){
+    on(lampStop,false); on(lampGo,true);
+    sigTitle.textContent='绿灯 · 全力制动';
+    sigTitle.classList.add('go');
+    sigPill.textContent='立即踩下刹车';
+    sigSub.innerHTML='踩死到 <b>1500 N</b> 抓地极限 · 松脚即加速';
+  }else{
+    on(lampStop,false); on(lampGo,false);
+    sigTitle.textContent='测试结束';
+    sigTitle.classList.remove('go');
+    sigPill.textContent='查看结果';
+    sigSub.textContent='—';
+  }
+}
+
+/* ================= HUD ================= */
+function updateHud(){
+  const kmh=G.v*KMH;
+  const near = G.phase==='run' && G.v>=GAUGE_V*0.85;   // 逼近仪表上限
+  elSpeed.textContent=String(Math.round(kmh)).padStart(3,'0');
+  elSpeed.classList.toggle('warn', near);
+  const off=100-Math.min(100,kmh/GAUGE_KMH*100);
+  arc.setAttribute('stroke-dashoffset',off);
+  arcGlow.setAttribute('stroke-dashoffset',off);
+  arc.setAttribute('stroke', near ? '#ff4d4d' : G.phase==='run' ? '#5ee08a' : '#ff7a3c');
+  arcGlow.setAttribute('stroke', near ? 'rgba(255,77,77,.34)' : G.phase==='run' ? 'rgba(94,224,138,.30)' : 'rgba(255,122,60,.35)');
+
+  // 力度（脚踏力度）与 ABS
+  elForce.textContent=String(Math.round(G.force));
+  elFVal.classList.toggle('hot', G.force>GRIP_N);
+  elFVal.classList.toggle('jit', G.absOn);
+  // 条子按满量程显示（会削平），但数值本身不设上限
+  const pct=Math.min(100, G.force/FSCALE_N*100);
+  fSeg.style.height=pct+'%';
+  fSeg.classList.toggle('over', G.absOn);
+  fBar.classList.toggle('abs', G.absOn);
+  absLed.classList.toggle('on', G.absOn);
+  const sat = G.force>FSCALE_N;
+  fBar.classList.toggle('sat', sat);
+  if(sat) fOvf.textContent='超 +'+Math.round(G.force-FSCALE_N);
+
+  // 踏板用被 ABS 卸压后的实际力度驱动 —— 踩死时会被反复弹起
+  const bounce = G.absOn ? Math.sin(G.absPhase/ABS_PERIOD*Math.PI*2) : 0;
+  const py = G.eff/BREAK_N*18 + bounce*5.5;
+  pedalSvg.style.transform='translateY('+py.toFixed(2)+'px) rotate('+(bounce*2.4).toFixed(2)+'deg)';
+
+  // 状态行：过压倒计时 > ABS 介入 > 常态
+  if(G.fuse!==null){
+    fState.textContent='过压！'+G.fuse.toFixed(1)+' s 后断裂';
+    fState.className='fdesc fuse';
+  }else if(G.absOn){
+    fState.textContent='ABS 介入 · 压力被反复卸除';
+    fState.className='fdesc abs';
+  }else{
+    fState.textContent='踩到 1500 N 即到抓地极限';
+    fState.className='fdesc';
+  }
+
+  // 左栏遥测
+  elReaction.textContent = G.reaction!=null ? G.reaction.toFixed(3)+' s' : '—';
+  const total = (G.phase==='done' && !G.fail) ? G.tRun : (G.phase==='run'||G.phase==='accel' ? (G.t100!=null?G.tRun:0) : 0);
+  elTotal.innerHTML = total.toFixed(2)+'<small>s</small>';
+  const traveled = G.t100!=null ? Math.max(0,G.dist-G.startDist) : 0;
+  elDist.innerHTML = traveled.toFixed(1)+'<small>m</small>';
+  elBest.textContent = best ? best.toFixed(3)+' s' : '—';
+
+  // 中央状态
+  let st='待 命', cls='';
+  if(G.phase==='accel'){ st='AUTO ACCELERATING'; }
+  else if(G.phase==='run'){
+    if(G.fuse!==null){ st='OVER PRESSURE'; cls='bad'; }
+    else if(G.absOn){ st='ABS ACTIVE'; cls='abs'; }
+    else if(G.force>=ENGAGE_N){ st='BRAKING'; cls='go'; }
+    else { st='SPEED RISING'; cls='bad'; }
+  }
+  else if(G.phase==='done'){ st=G.fail?'FAILED':'STOPPED'; cls=G.fail?'bad':'go'; }
+  elState.textContent=st;
+  elState.className='sp-state'+(cls?' '+cls:'');
+
+  elHintR.textContent = G.phase==='accel' ? '等待绿灯'
+    : G.phase==='run' ? (G.reaction===null?'立即踩下':'制动中')
+    : (G.phase==='done'?'查看结果':'等待绿灯');
+
+  // 逼近上限时把警示顶到信号灯下方
+  if(G.phase==='run'){
+    sigPill.textContent = near ? '车速逼近上限 · 立刻制动'
+      : (G.reaction===null ? '立即踩下刹车' : '松脚即加速');
+  }
+}
+
+/* 力度纵轴上限：以显示量程为底，按本局真实峰值自动上探（步进 200 N）
+   —— 曲线不再削平在 1600，踩过头的那一段要看得见 */
+function forceAxisMax(peakF){
+  return Math.max(FSCALE_N, Math.ceil((peakF||0)/200)*200);
+}
+
+/* ================= 实时遥测曲线 ================= */
+function drawTele(){
+  if(!ensureCanvas(teleCvs,teleCtx)) return;
+  const w=teleCvs.clientWidth, h=teleCvs.clientHeight;
+  teleCtx.clearRect(0,0,w,h);
+  const padL=22,padR=26,padT=8,padB=14;
+  const iw=w-padL-padR, ih=h-padT-padB;
+
+  // 网格
+  teleCtx.strokeStyle='rgba(255,255,255,.07)'; teleCtx.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=padT+ih*i/3;
+    teleCtx.beginPath(); teleCtx.moveTo(padL,y); teleCtx.lineTo(padL+iw,y); teleCtx.stroke();
+  }
+  // 刻度
+  teleCtx.fillStyle='#5c6673'; teleCtx.font='9px Oswald,sans-serif';
+  teleCtx.textAlign='left';
+  teleCtx.fillText('200',2,padT+4); teleCtx.fillText('0',2,padT+ih+3);
+  teleCtx.textAlign='right';
+  teleCtx.fillStyle='#8a6a4a';
+  const fMax=forceAxisMax(G.peak);
+  teleCtx.fillText(String(fMax),w-2,padT+4); teleCtx.fillText('0',w-2,padT+ih+3);
+
+  const T=6;                       // 时间窗 6s
+  const t0=Math.max(0, G.t-T);
+  const X=t=>padL+((t-t0)/T)*iw;
+  const Yv=v=>padT+ih-Math.min(1,(v*KMH)/200)*ih;
+  const Yf=f=>padT+ih-Math.min(1,f/fMax)*ih;
+
+  // 过压线：曲线冲到这条线以上就说明已经踩过头了
+  teleCtx.strokeStyle='rgba(255,70,60,.50)'; teleCtx.setLineDash([3,3]); teleCtx.lineWidth=1;
+  teleCtx.beginPath(); teleCtx.moveTo(padL,Yf(BREAK_N)); teleCtx.lineTo(padL+iw,Yf(BREAK_N)); teleCtx.stroke();
+  teleCtx.setLineDash([]);
+
+  // 计时起点竖线
+  if(G.t100!=null && G.t100>t0){
+    const x=X(G.t100);
+    teleCtx.strokeStyle='rgba(255,255,255,.30)'; teleCtx.setLineDash([3,3]);
+    teleCtx.beginPath(); teleCtx.moveTo(x,padT); teleCtx.lineTo(x,padT+ih); teleCtx.stroke();
+    teleCtx.setLineDash([]);
+  }
+
+  // 力度曲线
+  teleCtx.strokeStyle='#ff7a3c'; teleCtx.lineWidth=1.6;
+  teleCtx.beginPath();
+  let started=false;
+  for(const s of G.samples){
+    if(s.t<t0) continue;
+    const x=X(s.t), y=Yf(s.f);
+    started?teleCtx.lineTo(x,y):(teleCtx.moveTo(x,y),started=true);
+  }
+  teleCtx.stroke();
+
+  // 车速曲线
+  teleCtx.strokeStyle='#5ee08a'; teleCtx.lineWidth=1.8;
+  teleCtx.beginPath(); started=false;
+  for(const s of G.samples){
+    if(s.t<t0) continue;
+    const x=X(s.t), y=Yv(s.v);
+    started?teleCtx.lineTo(x,y):(teleCtx.moveTo(x,y),started=true);
+  }
+  teleCtx.stroke();
+
+  teleCtx.fillStyle='#5c6673'; teleCtx.textAlign='left';
+  teleCtx.fillText('0s',padL-4,h-3);
+  teleCtx.fillText('3s',padL+iw/2-6,h-3);
+  teleCtx.fillText('6s',padL+iw-10,h-3);
+}
+
+/* ================= 结算 ================= */
+function showResult(){
+  const kmh=(G.entryV*KMH);
+  const earlyKmh=G.fail==='early' ? (G.earlyV*KMH) : 0;
+  let stat='TEST PASSED', title='', sub='', big='', bigT='', bigCls='good';
+  if(G.fail==='early'){
+    stat='TEST FAILED'; title='踩早了';
+    sub='等到 100 km/h 绿色信号，再踩下踏板。';
+    big=Math.round(earlyKmh)+' km/h'; bigCls='';
+    bigT='踩下时速度 · 未达到出手阈值';
+  }else if(G.fail==='break'){
+    stat='TEST FAILED'; title='力度过大';
+    sub='卡钳压力冲过 '+BREAK_N+' N 后一直没松，撑过了断裂引信的时限。';
+    big=Math.round(G.peak)+' N'; bigCls='';
+    bigT='峰值力度 · 过压超过引信时限';
+  }else if(G.fail==='gauge'){
+    stat='TEST FAILED'; title='爆表了';
+    sub='车速一路冲到 200 km/h 上限，全程未有效制动。';
+    big=Math.round(G.peakV*KMH)+' km/h'; bigCls='';
+    bigT='最高车速 · 已超过仪表上限';
+  }else{
+    stat='TEST PASSED'; title='安全停稳';
+    sub='从 100 km/h 到完全停稳，制动过程正常。';
+    big=G.tRun.toFixed(3)+' s'; bigCls='good';
+    bigT='制动用时 · 100 → 0 km/h';
+  }
+  $('rStat').textContent=stat;
+  $('rStat').className='rstat'+(G.fail?' fail':'');
+  $('rTitle').textContent=title;
+  $('rSub').textContent=sub;
+  const bigEl=$('rBig');
+  bigEl.textContent=big;
+  bigEl.className='rbig'+(bigCls?' '+bigCls:'');
+  $('rBigT').textContent=bigT;
+  $('rReaction').textContent = G.reaction!=null ? G.reaction.toFixed(3)+' s' : '—';
+  $('rEntry').textContent = kmh>0 ? kmh.toFixed(1)+' km/h' : '—';
+  $('rPeak').textContent = Math.round(G.peak)+' N';
+  $('rFoot').textContent = '启动后 '+G.t.toFixed(2)+' s · '+(G.v*KMH).toFixed(1)+' km/h · '+Math.round(G.force)+' N'
+    + (G.niubest?' · 新纪录':'');
+  resultEl.classList.remove('hidden');
+  requestAnimationFrame(()=>{ drawResultChart(); requestAnimationFrame(drawResultChart); });
+}
+
+function drawResultChart(){
+  if(!ensureCanvas(resCvs,resCtx)) return;
+  const w=resCvs.clientWidth, h=resCvs.clientHeight;
+  resCtx.clearRect(0,0,w,h);
+  const padL=44,padR=52,padT=16,padB=30;
+  const iw=w-padL-padR, ih=h-padT-padB;
+  const last=G.samples.length?G.samples[G.samples.length-1].t:0;
+  const tMax=Math.max(6, Math.ceil(last));
+
+  // 网格
+  resCtx.strokeStyle='rgba(255,255,255,.08)'; resCtx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=padT+ih*i/4;
+    resCtx.beginPath(); resCtx.moveTo(padL,y); resCtx.lineTo(padL+iw,y); resCtx.stroke();
+  }
+  for(let t=0;t<=tMax;t+=3){
+    const x=padL+(t/tMax)*iw;
+    resCtx.beginPath(); resCtx.moveTo(x,padT); resCtx.lineTo(x,padT+ih); resCtx.stroke();
+  }
+
+  // 力度纵轴按本局真实峰值展开：冲过 1600 的那一段要原样画出来
+  let fPeak=G.peak||0, pSample=null;
+  for(const s of G.samples){ if(s.f>fPeak){fPeak=s.f;} if(!pSample||s.f>pSample.f) pSample=s; }
+  const fMax=forceAxisMax(fPeak);
+
+  const X=t=>padL+(t/tMax)*iw;
+  const Yv=v=>padT+ih-Math.min(1,(v*KMH)/200)*ih;
+  const Yf=f=>padT+ih-Math.min(1,f/fMax)*ih;
+
+  // 过压线（1600 N 引信点）
+  resCtx.strokeStyle='rgba(255,70,60,.55)'; resCtx.setLineDash([5,4]); resCtx.lineWidth=1.2;
+  resCtx.beginPath(); resCtx.moveTo(padL,Yf(BREAK_N)); resCtx.lineTo(padL+iw,Yf(BREAK_N)); resCtx.stroke();
+  resCtx.setLineDash([]);
+
+  // 计时起点
+  if(G.t100!=null){
+    const x=X(G.t100);
+    resCtx.strokeStyle='rgba(255,255,255,.42)'; resCtx.setLineDash([4,4]); resCtx.lineWidth=1.4;
+    resCtx.beginPath(); resCtx.moveTo(x,padT); resCtx.lineTo(x,padT+ih); resCtx.stroke();
+    resCtx.setLineDash([]);
+  }
+  // 半程线
+  resCtx.strokeStyle='rgba(255,255,255,.10)';
+  resCtx.beginPath(); resCtx.moveTo(padL+iw/2,padT); resCtx.lineTo(padL+iw/2,padT+ih); resCtx.stroke();
+
+  // 力度
+  resCtx.strokeStyle='#ff7a3c'; resCtx.lineWidth=2;
+  resCtx.beginPath(); let started=false;
+  for(const s of G.samples){ const x=X(s.t),y=Yf(s.f); started?resCtx.lineTo(x,y):(resCtx.moveTo(x,y),started=true); }
+  resCtx.stroke();
+  // 车速
+  resCtx.strokeStyle='#5ee08a'; resCtx.lineWidth=2.2;
+  resCtx.beginPath(); started=false;
+  for(const s of G.samples){ const x=X(s.t),y=Yv(s.v); started?resCtx.lineTo(x,y):(resCtx.moveTo(x,y),started=true); }
+  resCtx.stroke();
+
+  // 峰值标记：把真实峰值钉在曲线最高点上
+  if(pSample && pSample.f>0){
+    const px=X(pSample.t), py=Yf(pSample.f);
+    resCtx.fillStyle='#ff4d4d';
+    resCtx.beginPath(); resCtx.arc(px,py,3.2,0,Math.PI*2); resCtx.fill();
+    resCtx.font='11px Oswald,sans-serif'; resCtx.textAlign='center';
+    resCtx.fillText(Math.round(pSample.f)+' N', px, Math.max(padT+10, py-8));
+  }
+
+  // 坐标
+  resCtx.font='11px Oswald,sans-serif';
+  resCtx.fillStyle='#5ee08a'; resCtx.textAlign='right';
+  resCtx.fillText('200',padL-8,padT+4); resCtx.fillText('0',padL-8,padT+ih+4);
+  resCtx.fillStyle='#ff7a3c'; resCtx.textAlign='left';
+  resCtx.fillText(String(fMax),padL+iw+8,padT+4); resCtx.fillText('0',padL+iw+8,padT+ih+4);
+  // 过压线标注
+  resCtx.font='9px Oswald,sans-serif'; resCtx.textAlign='left';
+  resCtx.fillStyle='rgba(255,106,90,.85)';
+  resCtx.fillText('过压 '+BREAK_N, padL+3, Yf(BREAK_N)-3);
+  resCtx.fillStyle='#5c6673'; resCtx.textAlign='center';
+  for(let t=0;t<=tMax;t+=3){ resCtx.fillText(t+'s', X(t), padT+ih+18); }
+}
+
+/* ================= 按钮 ================= */
+$('btnStart').addEventListener('click', e=>{ e.stopPropagation(); startRun(); });
+$('btnRetry').addEventListener('click', e=>{ e.stopPropagation(); startRun(); });
+$('btnHome').addEventListener('click', e=>{ e.stopPropagation(); cancelPress(); showHome(); });
+$('btnSound').addEventListener('click', e=>{
+  e.stopPropagation(); muted=!muted;
+  $('btnSound').classList.toggle('off',muted);
+  $('btnSound').textContent = muted?'✕':'♪';
+});
+$('btnPause').addEventListener('click', e=>{
+  e.stopPropagation(); G.paused=!G.paused;
+  $('btnPause').textContent = G.paused?'▶':'❚❚';
+  cancelPress();
+});
+
+/* ================= 启动 ================= */
+resize();
+showHome();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>

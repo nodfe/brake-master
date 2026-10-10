@@ -1,0 +1,10 @@
+# 本地辅助数据（工具生成，与游戏运行无关）
+.workbuddy/
+
+# macOS
+.DS_Store
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
